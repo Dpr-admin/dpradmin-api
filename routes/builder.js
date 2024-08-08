@@ -61,6 +61,36 @@ router.post('/builders', upload.fields([
     console.error('Error Adding Builder:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
+
+
+});
+
+// GET route to fetch all builders
+router.get('/builders', async (req, res) => {
+  try {
+    const builders = await Builder.find();
+    return res.status(200).json(builders);
+  } catch (error) {
+    console.error('Error fetching builders:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+
+router.get('/builders/:builderName', async (req, res) => {
+  const { builderName } = req.params;
+
+  try {
+    const builder = await Builder.findOne({ builderName });
+    if (!builder) {
+      return res.status(404).json({ message: 'No builder found' });
+    }
+    return res.status(200).json(builder);
+  } catch (error) {
+    console.error('Error fetching builder by builderName:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
 export { router as BuilderRouter };

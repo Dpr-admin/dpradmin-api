@@ -1,16 +1,17 @@
+
 import express from 'express';
 import multer from 'multer';
-import { Project } from '../models/Projects.js'; 
+import { Project } from '../models/Projects.js'; // Importing the Project model
 
 const router = express.Router();
 
 // Set up multer for file upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); 
+    cb(null, 'uploads/'); // Specify the directory to save the uploaded files
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    cb(null, `${Date.now()}-${file.originalname}`); // Specify the file naming convention
   }
 });
 
@@ -29,19 +30,6 @@ const uploadFields = [
   { name: 'masterfloorplan', maxCount: 1 }
 ];
 
-// Helper function to parse inputs correctly
-const parseInputs = (input) => {
-  if (typeof input === 'string') {
-    try {
-      return JSON.parse(input);
-    } catch (e) {
-      return [];
-    }
-  }
-  return input || [];
-};
-
-// POST route to add or update project
 router.post('/projects', upload.fields(uploadFields), async (req, res) => {
   try {
     const { batch, projectname } = req.body;
@@ -53,23 +41,14 @@ router.post('/projects', upload.fields(uploadFields), async (req, res) => {
     let project = await Project.findOne({ projectname });
 
     if (!project) {
-      project = new Project({
-        projectname,
-        highlights: Array(25).fill(''),
-        amenities: Array(25).fill(''),
-        locationHighlights: Array(25).fill(''),
-        inputs: Array(75).fill(''),
-        iframe: '',
-      });
+      project = new Project({ projectname, inputs: Array(25).fill('') });
     }
 
     const updateProjectData = async (batch) => {
       switch (batch) {
         case '1':
           project.projectlocation = req.body.projectlocation || project.projectlocation;
-          project.projectprice = req.body.projectprice || project.projectprice;
           project.projectbhk = req.body.projectbhk || project.projectbhk;
-          project.buildername = req.body.buildername || project.buildername;
           project.projectfloors = req.body.projectfloors || project.projectfloors;
           project.projectsquareyards = req.body.projectsquareyards || project.projectsquareyards;
           project.projectsquarefeet = req.body.projectsquarefeet || project.projectsquarefeet;
@@ -83,9 +62,8 @@ router.post('/projects', upload.fields(uploadFields), async (req, res) => {
           break;
 
         case '2':
-          project.highlights = parseInputs(req.body.highlights);
-          for (let i = 0; i < project.highlights.length; i++) {
-            project.inputs[i] = project.highlights[i] || '';
+          for (let i = 0; i < 10; i++) {
+            project.inputs[i] = req.body[`input${i + 1}`] || project.inputs[i];
           }
           project.image2 = req.files['image2'] ? `/uploads/${req.files['image2'][0].filename}` : project.image2;
           project.image3 = req.files['image3'] ? `/uploads/${req.files['image3'][0].filename}` : project.image3;
@@ -93,9 +71,8 @@ router.post('/projects', upload.fields(uploadFields), async (req, res) => {
           break;
 
         case '3':
-          project.amenities = parseInputs(req.body.amenities);
-          for (let i = 0; i < project.amenities.length; i++) {
-            project.inputs[i + 25] = project.amenities[i] || '';
+          for (let i = 10; i < 20; i++) {
+            project.inputs[i] = req.body[`input${i + 1}`] || project.inputs[i];
           }
           project.image5 = req.files['image5'] ? `/uploads/${req.files['image5'][0].filename}` : project.image5;
           project.image6 = req.files['image6'] ? `/uploads/${req.files['image6'][0].filename}` : project.image6;
@@ -103,9 +80,8 @@ router.post('/projects', upload.fields(uploadFields), async (req, res) => {
           break;
 
         case '4':
-          project.locationHighlights = parseInputs(req.body.locationHighlights);
-          for (let i = 0; i < project.locationHighlights.length; i++) {
-            project.inputs[i + 50] = project.locationHighlights[i] || '';
+          for (let i = 20; i < 25; i++) {
+            project.inputs[i] = req.body[`input${i + 1}`] || project.inputs[i];
           }
           project.iframe = req.body.iframe || project.iframe;
           break;
@@ -120,22 +96,24 @@ router.post('/projects', upload.fields(uploadFields), async (req, res) => {
 
     return res.status(201).json({ status: true, message: 'Project data updated successfully' });
   } catch (error) {
-    console.error('Error updating project:', error);
+    console.error('Error registering project:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
 
+
+// GET route to fetch all projects by projectName
 router.get('/projects/:projectName', async (req, res) => {
   const { projectName } = req.params;
 
   try {
-    const project = await Project.findOne({ projectname: projectName });
-    if (!project) {
-      return res.status(404).json({ message: 'No project found' });
+    const projects = await Project.find({ projectname: projectName });
+    if (!projects || projects.length === 0) {
+      return res.status(404).json({ message: 'No projects found' });
     }
-    return res.status(200).json(project);
+    return res.status(200).json(projects[0]); // Return the first project
   } catch (error) {
-    console.error('Error fetching project by projectName:', error);
+    console.error('Error fetching projects by projectName:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -166,7 +144,5 @@ router.delete('/projects/:projectId', async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
-
-
 
 export { router as ProjectRouter };

@@ -125,8 +125,6 @@ router.post('/resetPassword/:token', async (req, res) => {
   }
 });
 
-
-// Middleware to verify JWT token from cookie
 const verifyToken = (req, res, next) => {
   const token = req.cookies.token;
   if (!token) {
@@ -144,13 +142,15 @@ const verifyToken = (req, res, next) => {
 };
 
 router.get('/protected', verifyToken, (req, res) => {
-  // This endpoint is protected and requires a valid JWT token in the cookie
   res.json({ message: 'Protected route', user: req.user });
 });
 
+
 router.get('/logout', (req, res) => {
-    res.clearCookie('token')
-    return res.json({ status: true, message: 'Logged out successfully' });
+  res.clearCookie('token', { path: '/' });
+  return res.json({ status: true, message: 'Logged out successfully' });
 });
+
+
 
 export { router as UserRouter };
